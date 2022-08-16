@@ -7,7 +7,7 @@ from flask_ckeditor import CKEditor
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 from flask_gravatar import Gravatar
@@ -19,7 +19,7 @@ Bootstrap(app)
 Gravatar(app)
 
 # CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL1", "sqlite:///blog.db")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("POSTGRES_DATABASE_URL", "sqlite:///blog.db")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -170,14 +170,17 @@ def show_post(post_id):
     requested_post = BlogPost.query.get(post_id)
 
     if form.validate_on_submit():
-        if current_user.is_authenticated:
-            new_comment = Comment(text=form.body.data)
-            db.session.add(new_comment)
-            db.session.commit()
-            return redirect(url_for("show_post", post_id=post_id))
-        else:
+        if not current_user.is_authenticated:
             flash("Please login to add comment")
             return redirect(url_for("login"))
+
+        new_comment = Comment(text=form.body.data,
+                              comment_author=current_user,
+                              parent_post=requested_post
+                              )
+        db.session.add(new_comment)
+        db.session.commit()
+        return redirect(url_for("show_post", post_id=post_id))
 
     return render_template("post.html", post=requested_post, form=form)
 
