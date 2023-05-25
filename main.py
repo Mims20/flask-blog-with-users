@@ -13,6 +13,7 @@ from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 from flask_gravatar import Gravatar
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -83,7 +84,8 @@ class Comment(db.Model):
     text = db.Column(db.Text, nullable=False)
 
 
-# db.create_all()
+with app.app_context():
+    db.create_all()
 
 
 @login_manager.user_loader
